@@ -1,0 +1,9 @@
+INFO:hackathon.launcher:app launching...
+INFO:hackathon.launcher:execute script: go run main.go
+INFO:hackathon.launcher:app launching...
+INFO:hackathon.launcher:execute script: go run main.go
+[I 151111 00:31:56 server:271] Serving on http://127.0.0.1:5500
+[I 151111 00:31:56 handlers:58] Start watching changes
+[I 151111 00:31:56 handlers:60] Start detecting changes
+INFO:hackathon.launcher:app launching...
+INFO:hackathon.launcher:execute script: go run main.go
