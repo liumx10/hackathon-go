@@ -15,6 +15,7 @@ import (
 	"sync"
 	//	"sync/atomic"
 	//	"strconv"
+	"runtime"
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -145,6 +146,7 @@ func (foods *Foods) init() {
 }
 
 func main() {
+	runtime.GOMAXPROCS(16)
 	db, err := getDb()
 	if err != nil {
 		fmt.Println("err: ", err)
@@ -232,7 +234,7 @@ func main() {
 		if check_access(token, r) {
 			Response(w, 200, foods.Foods[1:101])
 		} else {
-			Error(w, nil, "no valid access token")
+			Response(w, 200, "no valid access token")
 		}
 	})
 
