@@ -16,6 +16,7 @@ import (
 	//	"sync/atomic"
 	//	"strconv"
 	"runtime"
+	_ "util"
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -146,7 +147,7 @@ func (foods *Foods) init() {
 }
 
 func main() {
-	runtime.GOMAXPROCS(16)
+	runtime.GOMAXPROCS(4)
 	db, err := getDb()
 	if err != nil {
 		fmt.Println("err: ", err)
