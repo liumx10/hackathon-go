@@ -2,6 +2,8 @@ language: go
 
 script:
     - cd /vagrant/src/github.com/go-sql-driver/mysql
+    - echo $PYTHONPATH
+    - echo $GOPATH
     - go build
     - go run $PYTHONPATH/main.go
 
