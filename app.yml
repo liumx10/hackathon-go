@@ -3,7 +3,6 @@ language: go
 script:
     - cd /vagrant/src/github.com/go-sql-driver/mysql
     - go build
-script:
     - go run $PYTHONPATH/main.go
 
 
