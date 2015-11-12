@@ -2,3 +2,4 @@
 app.log
 vagrant
 pkg/*
+src/github.com/*
