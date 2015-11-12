@@ -1,6 +1,6 @@
 language: go
 
 script:
-   - export GOPATH=$PYTHONPATH;go get github.com/go-sql-driver/mysql;go build util;go run $PYTHONPATH/main.go
+   - export GOPATH=$PYTHONPATH;go get github.com/go-sql-driver/mysql;go build api;go run $PYTHONPATH/main.go
 
 

@@ -1,6 +1,0 @@
-package util
-
-func hello(){
-
-
-}
