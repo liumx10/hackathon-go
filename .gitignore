@@ -3,5 +3,3 @@
 app.log
 vagrant
 pkg/*
-src/github.com/*
-src/gopkg.in/*

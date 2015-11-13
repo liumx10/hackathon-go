@@ -1,6 +1,6 @@
 language: go
 
 script:
-   - export GOPATH=$PYTHONPATH;redis-cli flushdb;go get gopkg.in/redis.v3; go get github.com/go-sql-driver/mysql;go install api;go run $PYTHONPATH/main.go
+   - export GOPATH=$PYTHONPATH;redis-cli flushdb;go install gopkg.in/redis.v3; go install github.com/go-sql-driver/mysql;go install api;go run $PYTHONPATH/main.go
 
 
