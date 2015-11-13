@@ -14,11 +14,11 @@ func main() {
 	runtime.GOMAXPROCS(4)
 	api.Init()
 
-	//	api.InitNewRedisClient()
+	http.HandleFunc("/foods",api.FoodsHandler)
 	http.HandleFunc("/login", api.LoginHandler)
-	http.HandleFunc("/foods", api.FoodsHandler)
-	http.HandleFunc("/carts", api.CardsHandler)
-	//http.HandleFunc("/carts/", api.CardsAddFoodHandler)
+	http.HandleFunc("/carts", api.CartsHandler)
+	http.HandleFunc("/carts/", api.CartsAddFoodHandler)
+	http.HandleFunc("/orders",api.OrderHandler)
 	host := os.Getenv("APP_HOST")
 	port := os.Getenv("APP_PORT")
 	if host == "" {
