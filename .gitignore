@@ -2,5 +2,5 @@
 app.log
 vagrant
 pkg/*
-src/*
-
+src/github.com/*
+src/gopkg.in/*
