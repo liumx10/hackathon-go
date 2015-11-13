@@ -56,9 +56,9 @@ func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 		return User{}, err
 	}
 	if len(tok2) > 0 {
-		//	fmt.Println("tok2:", tok2)
-		name, _ := client.Get("token2name:" + tok1).Result()
-		fmt.Println("name")
+		fmt.Println("tok2:", tok2)
+		name, _ := client.Get("token2name:" + tok2).Result()
+		fmt.Println(name)
 		user := users.getuser(name)
 		fmt.Println(name, user)
 		if user.id > 0 {
