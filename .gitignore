@@ -1,3 +1,6 @@
 .vagrant/*
 app.log
 vagrant
+pkg/*
+src/*
+
