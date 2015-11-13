@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -38,6 +39,36 @@ func (users *Users) getuser(name string) User {
 		return User{-1, "", ""}
 	}
 	return v
+}
+func (users *Users) get_user_by_request(r *http.Request) (User, error) {
+	var err error
+	tok1 := r.Form.Get("access_token")
+	tok2 := r.Header.Get("Access-Token")
+	if len(tok1) > 0 {
+		fmt.Println("tok1:", tok1)
+		name, _ := client.Get("token2name:" + tok1).Result()
+		fmt.Println(name)
+		user := users.getuser(name)
+		if user.id > 0 {
+			return user, nil
+		}
+		err = errors.New("Invalid token!")
+		return User{}, err
+	}
+	if len(tok2) > 0 {
+		//	fmt.Println("tok2:", tok2)
+		name, _ := client.Get("token2name:" + tok1).Result()
+		fmt.Println("name")
+		user := users.getuser(name)
+		fmt.Println(name, user)
+		if user.id > 0 {
+			return user, nil
+		}
+		err = errors.New("Invalid token!")
+		return User{}, err
+	}
+	err = errors.New("No token")
+	return User{}, err
 }
 
 var users *Users
@@ -94,10 +125,15 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		if user.id != -1 && user.pwd == t.Password {
 			str := RandStringRunes(40)
 			log.Println(str)
-			err := client.Set(t.Username, str, 0).Err()
+			//log.Println(t.Username)
+			err := client.Set("name2token:"+t.Username, str, 0).Err()
 			if err != nil {
-				fmt.Println("redis add token failed")
+				fmt.Println("redis add username-token failed")
 				Response(w, 500, "")
+			}
+			err = client.Set("token2name:"+str, t.Username, 0).Err()
+			if err != nil {
+				fmt.Println("redis add token-username failed")
 			}
 			Response(w, 200, loginReply{user.id, t.Username, str})
 		} else {

@@ -16,8 +16,9 @@ func main() {
 
 	//	api.InitNewRedisClient()
 	http.HandleFunc("/login", api.LoginHandler)
+	http.HandleFunc("/foods", api.FoodsHandler)
 	http.HandleFunc("/carts", api.CardsHandler)
-	http.HandleFunc("/carts/", api.CardsAddFoodHandler)
+	//http.HandleFunc("/carts/", api.CardsAddFoodHandler)
 	host := os.Getenv("APP_HOST")
 	port := os.Getenv("APP_PORT")
 	if host == "" {

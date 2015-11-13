@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 )
@@ -59,9 +60,6 @@ func InitFood() {
 			fmt.Println(err)
 		}
 	}
-	for _, food := range foods.Foods {
-		fmt.Println(food.Id, food.Price, food.Stock)
-	}
 
 	res := foods.check(1)
 	fmt.Println("food id: 1 ", res)
@@ -77,4 +75,14 @@ func InitFood() {
 	price, _ = client.Get("food:2:price").Result()
 	stock, _ = client.Get("food:3:stock").Result()
 	fmt.Println("2: price:", price, " stock: ", stock)
+}
+
+func FoodsHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := users.get_user_by_request(r)
+	if err != nil {
+		fmt.Println(err)
+		Response(w, 500, "no valid access token")
+		return
+	}
+	Response(w, 200, foods.Foods[1:101])
 }

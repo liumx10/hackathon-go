@@ -29,9 +29,9 @@ func Response(w http.ResponseWriter, status int, reply interface{}) {
 func Parser(body []byte, value interface{}) error {
 	err := json.Unmarshal(body, value)
 	if err != nil {
-		log.Println("parser error")
+		//	log.Println("parser error")
 	} else {
-		log.Println("parser success")
+		//	log.Println("parser success")
 	}
 	return err
 }
