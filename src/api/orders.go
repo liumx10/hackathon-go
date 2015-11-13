@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"strconv"
 	"strings"
 	"net/http"
@@ -12,11 +11,12 @@ type OrderPostReply struct{
 	Id		string `json:"id"`
 }
 
-type OrderGetReply struct{
+type OrderGetReplyItem struct{
 	Id		string `json:"id"`
-	Items 	[]interface{}
+	Items 	[]interface{} `json:"items"`
 	Total	int `json:"total"`
 }
+
 
 type MakeOrderArgs struct{
 	CartId    string `json:"cart_id"`
@@ -89,9 +89,7 @@ func OrderHandler(w http.ResponseWriter, r *http.Request){
 				multi.Watch("food:"+food_ids[i]+":stock")
 			}
 			
-			
-			_,err:=multi.Exec(func() error{
-				for i:=0;i<len(cart_foods);i++{
+			for i:=0;i<len(cart_foods);i++{
 					left_stock,_ := strconv.Atoi(multi.Get("food:"+food_ids[i]+":stock").Val())
 					if(food_counts[i]>left_stock){
 						discarded=true
@@ -102,20 +100,17 @@ func OrderHandler(w http.ResponseWriter, r *http.Request){
 					}
 				}
 				if discarded {
-					return errors.New("Discarded")
+					break;
 				}
+			_,err:=multi.Exec(func() error{
 				for i:=0;i<len(cart_foods);i++{
 					multi.Set("food:"+food_ids[i]+":stock",strconv.Itoa(food_stock[i]-food_counts[i]),0)
 				}
 				return nil
 			})
-			if discarded{
-				break
-			}
 			if err==nil {
 				ok = true
 			}
-			
 		}
 		
 		if discarded{
@@ -143,23 +138,24 @@ func OrderHandler(w http.ResponseWriter, r *http.Request){
 		cart_foods:=client.LRange(order_id+":cart_foods",0,2).Val()
 		
 		total := 0 
-		var reply OrderGetReply
-		reply.Id=order_id
-		reply.Items=make([]interface{},len(cart_foods))
+		var replyItem OrderGetReplyItem
+		replyItem.Id=order_id
+		replyItem.Items=make([]interface{},len(cart_foods))
 		for i:=0;i<len(cart_foods);i++{
 			strs := strings.FieldsFunc(cart_foods[i],func(s rune) bool{
 				return s==':'
 			})
 			food_id,_ := strconv.Atoi(strs[0])
 			count,_ := strconv.Atoi(strs[1])
-			data := make(map[string]string)
-			data["food_id"] = strs[0]
-			data["count"] = strs[1]
-			reply.Items[i] =data
+			data := make(map[string]int)
+			data["food_id"] = food_id
+			data["count"] = count
+			replyItem.Items[i] =data
 			total+= count*foods.get_price(food_id)
 		}
-		reply.Total=total
-		
+		replyItem.Total=total
+		var reply [1]OrderGetReplyItem
+		reply[0]=replyItem
 		Response(w,200,reply)
 		
 	}
