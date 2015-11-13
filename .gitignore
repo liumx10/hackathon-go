@@ -1,3 +1,4 @@
+*.pyc
 .vagrant/*
 app.log
 vagrant

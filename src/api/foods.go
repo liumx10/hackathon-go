@@ -81,7 +81,7 @@ func FoodsHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := users.get_user_by_request(r)
 	if err != nil {
 		fmt.Println(err)
-		Response(w, 500, "no valid access token")
+		Response(w, 401, Reply{"INVALID_ACCESS_TOKEN", "无效的令牌"})
 		return
 	}
 	Response(w, 200, foods.Foods[1:101])

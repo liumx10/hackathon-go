@@ -116,6 +116,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(body) == 0 {
 		Response(w, 400, Reply{"EMPTY_REQUEST", "请求体为空"})
+		return
 	}
 	var t loginData
 	err = Parser(body, &t)
