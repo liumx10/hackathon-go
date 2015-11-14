@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"strconv"
 	"net/http"
 )
@@ -24,6 +23,5 @@ func CartsHandler(w http.ResponseWriter, r *http.Request){
 	client.SAdd("ALL_CARTS",cart_id)
 	client.Set(strconv.Itoa(user.id)+":carts",cart_id,0)
 	
-	fmt.Println("Add cart:"+cart_id)
 	Response(w,200,CartsReply{cart_id})
 }

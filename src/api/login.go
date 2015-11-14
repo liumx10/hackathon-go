@@ -41,13 +41,12 @@ func (users *Users) getuser(name string) User {
 	return v
 }
 func (users *Users) get_user_by_request(r *http.Request) (User, error) {
+	
 	var err error
 	tok1 := r.Form.Get("access_token")
 	tok2 := r.Header.Get("Access-Token")
 	if len(tok1) > 0 {
-		fmt.Println("tok1:", tok1)
 		name, _ := client.Get("token2name:" + tok1).Result()
-		fmt.Println(name)
 		user := users.getuser(name)
 		if user.id > 0 {
 			return user, nil
@@ -56,11 +55,8 @@ func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 		return User{}, err
 	}
 	if len(tok2) > 0 {
-		fmt.Println("tok2:", tok2)
 		name, _ := client.Get("token2name:" + tok2).Result()
-		fmt.Println(name)
 		user := users.getuser(name)
-		fmt.Println(name, user)
 		if user.id > 0 {
 			return user, nil
 		}
@@ -125,7 +121,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		user := users.getuser(t.Username)
 		if user.id != -1 && user.pwd == t.Password {
 			str := RandStringRunes(40)
-			log.Println(str)
+			//log.Println(str)
 			//log.Println(t.Username)
 			err := client.Set("name2token:"+t.Username, str, 0).Err()
 			if err != nil {
