@@ -23,6 +23,11 @@ type MakeOrderArgs struct{
 }
 
 func OrderHandler(w http.ResponseWriter, r *http.Request){
+	err := r.ParseForm();
+	if err!=nil {
+		Response(w, 400, Reply{"MALFORMED_JSON", "格式错误"})
+		return
+	}
 	user,err:=users.get_user_by_request(r)
 	if err!=nil{
 		Response(w, 401, Reply{"INVALID_ACCESS_TOKEN", "无效的令牌"})
@@ -120,7 +125,10 @@ func OrderHandler(w http.ResponseWriter, r *http.Request){
 		
 		if ok{
 			client.Set(user_id+":order",t.CartId,0)
-			
+			for i:=0;i<len(cart_foods);i++{
+				id,_ := strconv.Atoi(food_ids[i])
+				foods.update(id,food_stock[i]-food_counts[i])
+			}
 			Response(w,200,OrderPostReply{t.CartId})
 		}
 		

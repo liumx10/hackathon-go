@@ -16,8 +16,8 @@ type Foods struct {
 	Foods []Food
 }
 
-func (foods *Foods) update(id int, price int, st int) {
-	foods.Foods[id] = Food{id, price, st}
+func (foods *Foods) update(id int, st int) {
+	foods.Foods[id].Stock = st
 }
 func (foods *Foods) add(id int, price int, stock int) {
 	foods.Foods[id] = Food{id, price, stock}
@@ -78,7 +78,12 @@ func InitFood() {
 }
 
 func FoodsHandler(w http.ResponseWriter, r *http.Request) {
-	_, err := users.get_user_by_request(r)
+	err := r.ParseForm();
+	if err!=nil {
+		Response(w, 400, Reply{"MALFORMED_JSON", "格式错误"})
+		return
+	}
+	_, err = users.get_user_by_request(r)
 	if err != nil {
 		fmt.Println(err)
 		Response(w, 401, Reply{"INVALID_ACCESS_TOKEN", "无效的令牌"})
