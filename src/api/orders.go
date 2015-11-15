@@ -5,7 +5,6 @@ import (
 	"strings"
 	"net/http"
 	"io/ioutil"
-	"gopkg.in/redis.v3"
 )
 
 type OrderPostReply struct{
@@ -56,6 +55,10 @@ func OrderHandler(w http.ResponseWriter, r *http.Request){
 			Response(w, 400, Reply{"MALFORMED_JSON", "格式错误"})
 			return
 		}
+
+		
+		
+		
 		
 		if !client.SIsMember("ALL_CARTS",t.CartId).Val(){
 			Response(w,404,Reply{"CART_NOT_FOUND","篮子不存在"})
@@ -74,32 +77,45 @@ func OrderHandler(w http.ResponseWriter, r *http.Request){
 		
 		cart_foods:=client.LRange(t.CartId+":cart_foods",0,2).Val()
 		
+		ok := false
+		multi := client.Multi()
+		defer multi.Close()
 		var food_ids [3]string
 		var food_counts [3] int
 		var food_stock [3] int
-		var food_cmd [3] *redis.StringCmd
 		discarded:= false
-		
-		for i:=0;i<len(cart_foods);i++{
-			strs := strings.FieldsFunc(cart_foods[i],func(s rune) bool{
-				return s==':'
-			})
-			food_ids[i] = strs[0]
-			food_counts[i],_ = strconv.Atoi(strs[1])
-		}
-		get_pipeline:=client.Pipeline()
-		for i:=0;i<len(cart_foods);i++{
-				food_cmd[i]=get_pipeline.Get("food:"+food_ids[i]+":stock")
-		}
-		get_pipeline.Exec()
-		for i:=0;i<len(cart_foods);i++{
-				left_stock,_ := strconv.Atoi(food_cmd[i].Val())
-				if(food_counts[i]>left_stock){
-					discarded=true
-					break
-				}else{
-					food_stock[i]=left_stock
+		for !ok{
+			for i:=0;i<len(cart_foods);i++{
+				strs := strings.FieldsFunc(cart_foods[i],func(s rune) bool{
+					return s==':'
+				})
+				food_ids[i] = strs[0]
+				food_counts[i],_ = strconv.Atoi(strs[1])
+				multi.Watch("food:"+food_ids[i]+":stock")
+			}
+			
+			for i:=0;i<len(cart_foods);i++{
+					left_stock,_ := strconv.Atoi(multi.Get("food:"+food_ids[i]+":stock").Val())
+					if(food_counts[i]>left_stock){
+						discarded=true
+						multi.Discard()
+						break
+					}else{
+						food_stock[i]=left_stock
+					}
 				}
+				if discarded {
+					break;
+				}
+			_,err:=multi.Exec(func() error{
+				for i:=0;i<len(cart_foods);i++{
+					multi.Set("food:"+food_ids[i]+":stock",strconv.Itoa(food_stock[i]-food_counts[i]),0)
+				}
+				return nil
+			})
+			if err==nil {
+				ok = true
+			}
 		}
 		
 		if discarded{
@@ -107,20 +123,14 @@ func OrderHandler(w http.ResponseWriter, r *http.Request){
 			return
 		}
 		
-		pipeline:=client.Pipeline()
-		defer pipeline.Close()
-		for i:=0;i<len(cart_foods);i++{
-			pipeline.Set("food:"+food_ids[i]+":stock",strconv.Itoa(food_stock[i]-food_counts[i]),0)
+		if ok{
+			client.Set(user_id+":order",t.CartId,0)
+			for i:=0;i<len(cart_foods);i++{
+				id,_ := strconv.Atoi(food_ids[i])
+				foods.update(id,food_stock[i]-food_counts[i])
+			}
+			Response(w,200,OrderPostReply{t.CartId})
 		}
-		
-		
-		pipeline.Set(user_id+":order",t.CartId,0)
-		pipeline.Exec()
-		for i:=0;i<len(cart_foods);i++{
-			id,_ := strconv.Atoi(food_ids[i])
-			foods.update(id,food_stock[i]-food_counts[i])
-		}
-		Response(w,200,OrderPostReply{t.CartId})
 		
 		
 	}else if r.Method=="GET"{
