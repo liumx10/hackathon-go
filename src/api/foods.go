@@ -75,11 +75,13 @@ func InitFood() {
 	price, _ = client.Get("food:2:price").Result()
 	stock, _ = client.Get("food:3:stock").Result()
 	fmt.Println("2: price:", price, " stock: ", stock)
+
+	fmt.Println("food 42 stock ", foods.Foods[42].Stock)
 }
 
 func FoodsHandler(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm();
-	if err!=nil {
+	err := r.ParseForm()
+	if err != nil {
 		Response(w, 400, Reply{"MALFORMED_JSON", "格式错误"})
 		return
 	}
@@ -89,5 +91,6 @@ func FoodsHandler(w http.ResponseWriter, r *http.Request) {
 		Response(w, 401, Reply{"INVALID_ACCESS_TOKEN", "无效的令牌"})
 		return
 	}
+	fmt.Println("foods: 42 ", foods.Foods[42].Stock)
 	Response(w, 200, foods.Foods[1:101])
 }
