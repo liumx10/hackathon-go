@@ -91,6 +91,6 @@ func FoodsHandler(w http.ResponseWriter, r *http.Request) {
 		Response(w, 401, Reply{"INVALID_ACCESS_TOKEN", "无效的令牌"})
 		return
 	}
-	fmt.Println("foods: 42 ", foods.Foods[42].Stock)
+	//fmt.Println("foods: 42 ", foods.Foods[42].Stock)
 	Response(w, 200, foods.Foods[1:101])
 }
