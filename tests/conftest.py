@@ -101,6 +101,7 @@ def stock_of(url, conn, token):
         res = jget(url + "/foods", token)
         assert res.status_code == 200
         foods = res.json()
+        print foods
         for f in foods:
             if f["id"] == food_id:
                 return f["stock"]

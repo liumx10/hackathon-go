@@ -109,6 +109,7 @@ def test_food_stock_consistency(tokens, make_order, stock_of):
     food_id = 42
     remain_stock = stock_of(food_id)
     for token in token_gen:
+        print 'remain ' + str(remain_stock)
         count = min(remain_stock, 3)
         res = make_order(token, {"food_id": food_id, "count": count})
         remain_stock -= count
