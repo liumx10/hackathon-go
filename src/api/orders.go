@@ -127,7 +127,8 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		pipeline := client.Pipeline()
 		defer pipeline.Close()
 		for i := 0; i < len(cart_foods); i++ {
-			pipeline.Set("food:"+food_ids[i]+":stock", strconv.Itoa(food_stock[i]-food_counts[i]), 0)
+			//pipeline.Set("food:"+food_ids[i]+":stock", strconv.Itoa(food_stock[i]-food_counts[i]), 0)
+			pipeline.DecrBy("food:"+food_ids[i]+":stock", int64(food_counts[i]))
 		}
 
 		pipeline.Set(user_id+":order", t.CartId, 0)
