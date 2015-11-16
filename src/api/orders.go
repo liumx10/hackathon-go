@@ -3,7 +3,7 @@ package api
 import (
 	"gopkg.in/redis.v3"
 	"io/ioutil"
-	"log"
+	//	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -110,7 +110,7 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		get_pipeline.Exec()
 		for i := 0; i < len(cart_foods); i++ {
 			left_stock, _ := strconv.Atoi(food_cmd[i].Val())
-			log.Println("left stock: ", left_stock, " food count: ", food_counts[i])
+			//	log.Println("left stock: ", left_stock, " food count: ", food_counts[i])
 			if food_counts[i] > left_stock {
 				discarded = true
 				break
@@ -127,7 +127,8 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		pipeline := client.Pipeline()
 		defer pipeline.Close()
 		for i := 0; i < len(cart_foods); i++ {
-			pipeline.Set("food:"+food_ids[i]+":stock", strconv.Itoa(food_stock[i]-food_counts[i]), 0)
+			//pipeline.Set("food:"+food_ids[i]+":stock", strconv.Itoa(food_stock[i]-food_counts[i]), 0)
+			pipeline.DecrBy("food:"+food_ids[i]+":stock", int64(food_counts[i]))
 		}
 
 		pipeline.Set(user_id+":order", t.CartId, 0)
@@ -135,7 +136,7 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		for i := 0; i < len(cart_foods); i++ {
 			id, _ := strconv.Atoi(food_ids[i])
 			foods.update(id, food_stock[i]-food_counts[i])
-			log.Println("food left: ", foods.Foods[id].Stock)
+			//	log.Println("food left: ", foods.Foods[id].Stock)
 		}
 		Response(w, 200, OrderPostReply{t.CartId})
 
