@@ -40,7 +40,7 @@ func (users *Users) getuser(name string) User {
 	return v
 }
 func (users *Users) get_user_by_request(r *http.Request) (User, error) {
-	
+
 	var err error
 	tok1 := r.Form.Get("access_token")
 	tok2 := r.Header.Get("Access-Token")
@@ -126,10 +126,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				fmt.Println("redis add username-token failed")
 				Response(w, 500, "")
+				return
 			}
 			err = client.Set("token2name:"+str, t.Username, 0).Err()
 			if err != nil {
 				fmt.Println("redis add token-username failed")
+				Response(w, 500, "")
+				return
 			}
 			Response(w, 200, loginReply{user.id, t.Username, str})
 		} else {
