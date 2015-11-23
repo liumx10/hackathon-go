@@ -47,6 +47,8 @@ func InitFood() {
 		os.Exit(-1)
 	}
 	defer rows.Close()
+	client:=BorrowClient()
+	defer ReturnClient(client)
 	for rows.Next() {
 		var id, price, stock int
 		rows.Scan(&id, &stock, &price)

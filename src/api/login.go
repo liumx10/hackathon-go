@@ -44,6 +44,8 @@ func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 	var err error
 	tok1 := r.Form.Get("access_token")
 	tok2 := r.Header.Get("Access-Token")
+	client:=BorrowClient()
+	defer ReturnClient(client)
 	if len(tok1) > 0 {
 		name, _ := client.Get("token2name:" + tok1).Result()
 		user := users.getuser(name)
@@ -115,7 +117,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var t loginData
 	err = Parser(body, &t)
-
+	client:=BorrowClient()
+	defer ReturnClient(client)
 	if err == nil {
 		user := users.getuser(t.Username)
 		if user.id != -1 && user.pwd == t.Password {

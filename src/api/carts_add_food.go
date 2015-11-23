@@ -34,6 +34,8 @@ func CartsAddFoodHandler(w http.ResponseWriter, r *http.Request){
 		Response(w, 401, Reply{"INVALID_ACCESS_TOKEN", "无效的令牌"})
 		return
 	}
+	client:=BorrowClient()
+	defer ReturnClient(client)
 	cart_id := GetCartidFromUrl(r.URL.Path)
 	if !client.SIsMember("ALL_CARTS",cart_id).Val(){
 		Response(w,404,Reply{"CART_NOT_FOUND","篮子不存在"})

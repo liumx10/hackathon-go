@@ -19,6 +19,8 @@ func CartsHandler(w http.ResponseWriter, r *http.Request){
 		Response(w, 401, Reply{"INVALID_ACCESS_TOKEN", "无效的令牌"})
 		return
 	}
+	client:=BorrowClient()
+	defer ReturnClient(client)
 	cart_id := RandStringRunes(32)
 	client.SAdd("ALL_CARTS",cart_id)
 	client.Set(strconv.Itoa(user.id)+":carts",cart_id,0)

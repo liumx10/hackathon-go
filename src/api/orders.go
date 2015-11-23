@@ -35,6 +35,8 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user_id := strconv.Itoa(user.id)
+	client:=BorrowClient()
+	defer ReturnClient(client)
 	if r.Method == "POST" {
 		r.ParseForm()
 
