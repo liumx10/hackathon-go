@@ -39,12 +39,13 @@ func (users *Users) getuser(name string) User {
 	}
 	return v
 }
+
 func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 
 	var err error
 	tok1 := r.Form.Get("access_token")
 	tok2 := r.Header.Get("Access-Token")
-	client:=BorrowClient()
+	client := BorrowClient()
 	defer ReturnClient(client)
 	if len(tok1) > 0 {
 		name, _ := client.Get("token2name:" + tok1).Result()
@@ -117,26 +118,22 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var t loginData
 	err = Parser(body, &t)
-	client:=BorrowClient()
-	defer ReturnClient(client)
+
 	if err == nil {
 		user := users.getuser(t.Username)
 		if user.id != -1 && user.pwd == t.Password {
 			str := RandStringRunes(40)
 			//log.Println(str)
 			//log.Println(t.Username)
-			err := client.Set("name2token:"+t.Username, str, 0).Err()
-			if err != nil {
-				fmt.Println("redis add username-token failed")
-				Response(w, 500, "")
-				return
-			}
-			err = client.Set("token2name:"+str, t.Username, 0).Err()
-			if err != nil {
-				fmt.Println("redis add token-username failed")
-				Response(w, 500, "")
-				return
-			}
+
+			client := BorrowClient()
+			defer ReturnClient(client)
+			pipeline := client.Pipeline()
+			defer pipeline.Close()
+			pipeline.Set("name2token:"+t.Username, str, 0).Err()
+			pipeline.Set("token2name:"+str, t.Username, 0).Err()
+			pipeline.Exec()
+
 			Response(w, 200, loginReply{user.id, t.Username, str})
 		} else {
 			Response(w, 403, Reply{"USER_AUTH_FAIL", "用户名或密码错误"})
