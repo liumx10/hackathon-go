@@ -35,7 +35,7 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user_id := strconv.Itoa(user.id)
-	client:=BorrowClient()
+	client := BorrowClient()
 	defer ReturnClient(client)
 	if r.Method == "POST" {
 		r.ParseForm()
@@ -80,7 +80,7 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		//user_cart_id := client.Get(user_id + ":carts").Val()
 		//if t.CartId != user_cart_id {
 		if t.CartId != user_cart_id.Val() {
-			Response(w, 403, Reply{"NOT_AUTHORIZED_TO_ACCESS_CART", "无权限访问指定的篮子"})
+			Response(w, 401, Reply{"NOT_AUTHORIZED_TO_ACCESS_CART", "无权限访问指定的篮子"})
 			return
 		}
 
