@@ -21,9 +21,11 @@ func CartsHandler(w http.ResponseWriter, r *http.Request){
 	}
 	client:=BorrowClient()
 	defer ReturnClient(client)
+	pipeline:=client.Pipeline()
 	cart_id := RandStringRunes(32)
-	client.SAdd("ALL_CARTS",cart_id)
-	client.Set(strconv.Itoa(user.id)+":carts",cart_id,0)
-	
+	pipeline.SAdd("ALL_CARTS",cart_id)
+	pipeline.Set(strconv.Itoa(user.id)+":carts",cart_id,0)
+	pipeline.Exec()
+	pipeline.Close()
 	Response(w,200,CartsReply{cart_id})
 }

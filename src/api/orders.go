@@ -63,14 +63,15 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		var cart_foodcmd *redis.StringSliceCmd
 
 		init_pip := client.Pipeline()
-		defer init_pip.Close()
+	 
 
 		ismember = init_pip.SIsMember("ALL_CARTS", t.CartId)
 		cart_exist = init_pip.Exists(user_id + ":order")
 		user_cart_id = init_pip.Get(user_id + ":carts")
 		cart_foodcmd = init_pip.LRange(t.CartId+":cart_foods", 0, 2)
 		init_pip.Exec()
-
+		defer init_pip.Close()
+		
 		//log.Println(ismember.Val(), ", ", cart_exist.Val(), ", ", user_cart_id.Val(), ", ", cart_foodcmd.Val())
 		//if !client.SIsMember("ALL_CARTS", t.CartId).Val() {
 		if !ismember.Val() {
@@ -91,12 +92,10 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		cart_foods := cart_foodcmd.Val()
 		//cart_foods := client.LRange(t.CartId+":cart_foods", 0, 2).Val()
-
+	
 		var food_ids [3]string
 		var food_counts [3]int
 		var food_stock [3]int
-		var food_cmd [3]*redis.StringCmd
-		discarded := false
 
 		for i := 0; i < len(cart_foods); i++ {
 			strs := strings.FieldsFunc(cart_foods[i], func(s rune) bool {
@@ -105,33 +104,41 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 			food_ids[i] = strs[0]
 			food_counts[i], _ = strconv.Atoi(strs[1])
 		}
-		get_pipeline := client.Pipeline()
+		
+		
+
+
+			
+		pipeline := client.Pipeline()
+			
+		var decr_cmd [3]*redis.IntCmd
 		for i := 0; i < len(cart_foods); i++ {
-			food_cmd[i] = get_pipeline.Get("food:" + food_ids[i] + ":stock")
+			decr_cmd[i]=pipeline.DecrBy("food:"+food_ids[i]+":stock", int64(food_counts[i]))
 		}
-		get_pipeline.Exec()
-		for i := 0; i < len(cart_foods); i++ {
-			left_stock, _ := strconv.Atoi(food_cmd[i].Val())
-			//	log.Println("left stock: ", left_stock, " food count: ", food_counts[i])
-			if food_counts[i] > left_stock {
-				discarded = true
+		pipeline.Exec()
+		pipeline.Close()
+		rollback := false
+		
+		for i:=0;i<len(cart_foods);i++{
+			res := decr_cmd[i].Val()
+			if res<0 {
+				rollback = true
 				break
-			} else {
-				food_stock[i] = left_stock
 			}
 		}
-
-		if discarded {
+		
+		if rollback{
+			rollback_pipeline := client.Pipeline()
+			for i := 0; i < len(cart_foods); i++ {
+				rollback_pipeline.IncrBy("food:"+food_ids[i]+":stock", int64(food_counts[i]))
+			}
+			rollback_pipeline.Exec()
+			rollback_pipeline.Close()
 			Response(w, 403, Reply{"FOOD_OUT_OF_STOCK", "食物库存不足"})
 			return
 		}
-
-		pipeline := client.Pipeline()
-		defer pipeline.Close()
-		for i := 0; i < len(cart_foods); i++ {
-			//pipeline.Set("food:"+food_ids[i]+":stock", strconv.Itoa(food_stock[i]-food_counts[i]), 0)
-			pipeline.DecrBy("food:"+food_ids[i]+":stock", int64(food_counts[i]))
-		}
+		
+		
 		
 		order_content:=""
 		for i:=0;i<len(cart_foods);i++{
@@ -141,15 +148,15 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		
-		
-		pipeline.Set(user_id+":order", order_content, 0)
-		pipeline.Set(user_id+":order_id",t.CartId,0)
-		pipeline.SAdd("ALL_ORDERS",order_content+";"+user_id+";"+t.CartId)
-		pipeline.Exec()
+		finish_pipeline:=client.Pipeline()
+		finish_pipeline.Set(user_id+":order", order_content, 0)
+		finish_pipeline.Set(user_id+":order_id",t.CartId,0)
+		finish_pipeline.SAdd("ALL_ORDERS",order_content+";"+user_id+";"+t.CartId)
+		finish_pipeline.Exec()
+		finish_pipeline.Close()
 		for i := 0; i < len(cart_foods); i++ {
 			id, _ := strconv.Atoi(food_ids[i])
 			foods.update(id, food_stock[i]-food_counts[i])
-			//	log.Println("food left: ", foods.Foods[id].Stock)
 		}
 		Response(w, 200, OrderPostReply{t.CartId})
 
