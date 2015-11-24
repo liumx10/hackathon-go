@@ -35,7 +35,7 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user_id := strconv.Itoa(user.id)
-	client := BorrowClient()
+	client:=BorrowClient()
 	defer ReturnClient(client)
 	if r.Method == "POST" {
 		r.ParseForm()
@@ -132,8 +132,19 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 			//pipeline.Set("food:"+food_ids[i]+":stock", strconv.Itoa(food_stock[i]-food_counts[i]), 0)
 			pipeline.DecrBy("food:"+food_ids[i]+":stock", int64(food_counts[i]))
 		}
-
-		pipeline.Set(user_id+":order", t.CartId, 0)
+		
+		order_content:=""
+		for i:=0;i<len(cart_foods);i++{
+			order_content+=food_ids[i]+":"+strconv.Itoa(food_counts[i]);
+			if i!=len(order_content)-1{
+				order_content+=","
+			}
+		}
+		
+		
+		pipeline.Set(user_id+":order", order_content, 0)
+		pipeline.Set(user_id+":order_id",t.CartId,0)
+		pipeline.SAdd("ALL_ORDERS",order_content+";"+user_id+";"+t.CartId)
 		pipeline.Exec()
 		for i := 0; i < len(cart_foods); i++ {
 			id, _ := strconv.Atoi(food_ids[i])
@@ -145,13 +156,18 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 	} else if r.Method == "GET" {
 		r.ParseForm()
 
-		order_id, err := client.Get(user_id + ":order").Result()
-		if err != nil {
-			Response(w, 200, EmptyReply{})
+		order_content,err := client.Get(user_id + ":order").Result()
+		
+		if err!=nil{
+			Response(w,200,EmptyReply{})
 			return
 		}
+		
+		order_id := client.Get(user_id+":order_id").Val()
 
-		cart_foods := client.LRange(order_id+":cart_foods", 0, 2).Val()
+		cart_foods := strings.FieldsFunc(order_content, func(s rune) bool {
+				return s == ','
+			})
 
 		total := 0
 		var replyItem OrderGetReplyItem

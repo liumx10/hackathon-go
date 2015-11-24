@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	runtime.GOMAXPROCS(4)
+	runtime.GOMAXPROCS(8)
 	api.Init()
 
 	http.HandleFunc("/foods",api.FoodsHandler)
@@ -19,6 +19,7 @@ func main() {
 	http.HandleFunc("/carts", api.CartsHandler)
 	http.HandleFunc("/carts/", api.CartsAddFoodHandler)
 	http.HandleFunc("/orders",api.OrderHandler)
+	http.HandleFunc("/admin/orders",api.AdminGetOrderHandler)
 	host := os.Getenv("APP_HOST")
 	port := os.Getenv("APP_PORT")
 	if host == "" {
