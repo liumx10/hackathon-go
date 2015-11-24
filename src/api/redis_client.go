@@ -20,8 +20,8 @@ func ReturnClient(client *redis.Client){
 }
 
 func InitNewRedisClient() {
-	client_chan = make(chan *redis.Client,16)
-	for i:=0;i<16;i++{
+	client_chan = make(chan *redis.Client,128)
+	for i:=0;i<128;i++{
 		client := redis.NewClient(&redis.Options{
 			Addr:     os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT"),
 			Password: "",
