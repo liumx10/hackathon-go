@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"runtime/debug"
 	"fmt"
     "time"
 	"log"
@@ -55,6 +56,10 @@ func Error(w http.ResponseWriter, err error, message string) {
 func Init() {
 	fmt.Println("init environment")
     rand.Seed(time.Now().UnixNano())
+
+
+	debug.SetGCPercent(-1)
+
 	InitNewMysqlClient()
 	InitNewRedisClient()
 

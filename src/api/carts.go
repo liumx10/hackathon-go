@@ -21,7 +21,7 @@ func CartsHandler(w http.ResponseWriter, r *http.Request) {
 		Response(w, 401, Reply{"INVALID_ACCESS_TOKEN", "无效的令牌"})
 		return
 	}
-	cart_id := RandStringRunes(32)
+	cart_id := RandStringRunes(12)
 
 	client := BorrowClient()
 	defer ReturnClient(client)

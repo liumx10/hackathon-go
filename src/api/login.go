@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"github.com/coocood/freecache"
 	"sync"
 )
 
@@ -16,20 +17,21 @@ type User struct {
 }
 type Users struct {
 	Users      map[string]User
-	Token2User map[string]User
+	Token2User *freecache.Cache
 	m          *sync.RWMutex
 }
 
 func (users *Users) init() {
 	users.Users = make(map[string]User)
-	users.Token2User = make(map[string]User)
+	users.Token2User = freecache.NewCache(10000 * 200)
+	
 	users.m = new(sync.RWMutex)
 }
 func (users *Users) add(id int, name string, pwd string) {
 	users.Users[name] = User{id, name, pwd}
 }
-func (users *Users) addtoken(tok string, user User) {
-	users.Token2User[tok] = user
+func (users *Users) addtoken(tok string, username string) {
+	users.Token2User.Set([]byte(tok),[]byte(username),60)
 }
 func (users *Users) check(name string, pwd string) bool {
 	v, ok := users.Users[name]
@@ -53,8 +55,7 @@ func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 	var err error
 	tok1 := r.Form.Get("access_token")
 	tok2 := r.Header.Get("Access-Token")
-	client := BorrowClient()
-	defer ReturnClient(client)
+	
 
 	var tok string
 	if len(tok1) > 0 {
@@ -64,19 +65,16 @@ func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 		tok = tok2
 	}
 	if len(tok) > 0 {
-		users.m.RLock()
-		v, ok := users.Token2User[tok]
-		users.m.RUnlock()
-		if ok {
-			fmt.Println("token cached")
-			return v, nil
+		v, err := users.Token2User.Get([]byte(tok))
+		if err!=nil {
+			return users.getuser(string(v[:])), nil
 		} else {
+			client := BorrowClient()
+			defer ReturnClient(client)
 			name, _ := client.Get("token2name:" + tok).Result()
 			user := users.getuser(name)
 			if user.id > 0 {
-				users.m.Lock()
-				users.Token2User[tok] = user
-				users.m.Unlock()
+				users.addtoken(tok,name)
 				return user, nil
 			}
 			err = errors.New("Invalid token!")
@@ -140,7 +138,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		user := users.getuser(t.Username)
 		if user.id != -1 && user.pwd == t.Password {
-			str := RandStringRunes(40)
+			str := RandStringRunes(10)
 			//log.Println(str)
 			//log.Println(t.Username)
 
@@ -152,9 +150,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			pipeline.Set("token2name:"+str, t.Username, 0).Err()
 			pipeline.Exec()
 
-			users.m.Lock()
-			users.addtoken(str, user)
-			users.m.Unlock()
+			users.addtoken(str, user.name)
+			
 
 			Response(w, 200, loginReply{user.id, t.Username, str})
 		} else {

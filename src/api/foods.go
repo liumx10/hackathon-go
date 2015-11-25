@@ -90,6 +90,7 @@ func InitFood() {
 			fmt.Println("tick")
 		}
 	}()
+	
 }
 
 func FoodsHandler(w http.ResponseWriter, r *http.Request) {
