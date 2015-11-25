@@ -11,27 +11,29 @@ import (
 var client_chan chan *redis.Client
 var db *sql.DB
 
-
-func BorrowClient() *redis.Client{
+func BorrowClient() *redis.Client {
 	return <-client_chan
 }
-func ReturnClient(client *redis.Client){
-	client_chan<-client;
+func ReturnClient(client *redis.Client) {
+	client_chan <- client
 }
 
 func InitNewRedisClient() {
-	client_chan = make(chan *redis.Client,128)
-	for i:=0;i<128;i++{
+	client_chan = make(chan *redis.Client, 128)
+	for i := 0; i < 128; i++ {
 		client := redis.NewClient(&redis.Options{
 			Addr:     os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT"),
 			Password: "",
 			DB:       0,
 		})
-		pong, err := client.Ping().Result()
-		fmt.Println(pong, err)
-		client_chan<-client;
+		_, err := client.Ping().Result()
+		if err != nil {
+			fmt.Println("redis connect error")
+		}
+		//fmt.Println(pong, err)
+		client_chan <- client
 	}
-	
+
 }
 
 func InitNewMysqlClient() {

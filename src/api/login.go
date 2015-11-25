@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sync"
 )
 
 type User struct {
@@ -16,13 +17,19 @@ type User struct {
 type Users struct {
 	Users      map[string]User
 	Token2User map[string]User
+	m          *sync.RWMutex
 }
 
 func (users *Users) init() {
 	users.Users = make(map[string]User)
+	users.Token2User = make(map[string]User)
+	users.m = new(sync.RWMutex)
 }
 func (users *Users) add(id int, name string, pwd string) {
 	users.Users[name] = User{id, name, pwd}
+}
+func (users *Users) addtoken(tok string, user User) {
+	users.Token2User[tok] = user
 }
 func (users *Users) check(name string, pwd string) bool {
 	v, ok := users.Users[name]
@@ -57,13 +64,19 @@ func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 		tok = tok2
 	}
 	if len(tok) > 0 {
+		users.m.RLock()
 		v, ok := users.Token2User[tok]
+		users.m.RUnlock()
 		if ok {
+			fmt.Println("token cached")
 			return v, nil
 		} else {
-			name, _ := client.Get("token2name:" + tok1).Result()
+			name, _ := client.Get("token2name:" + tok).Result()
 			user := users.getuser(name)
 			if user.id > 0 {
+				users.m.Lock()
+				users.Token2User[tok] = user
+				users.m.Unlock()
 				return user, nil
 			}
 			err = errors.New("Invalid token!")
@@ -135,9 +148,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			defer ReturnClient(client)
 			pipeline := client.Pipeline()
 			defer pipeline.Close()
-			pipeline.Set("name2token:"+t.Username, str, 0).Err()
+			//		pipeline.Set("name2token:"+t.Username, str, 0).Err()
 			pipeline.Set("token2name:"+str, t.Username, 0).Err()
 			pipeline.Exec()
+
+			users.m.Lock()
+			users.addtoken(str, user)
+			users.m.Unlock()
 
 			Response(w, 200, loginReply{user.id, t.Username, str})
 		} else {
