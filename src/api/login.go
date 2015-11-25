@@ -14,7 +14,8 @@ type User struct {
 	pwd  string
 }
 type Users struct {
-	Users map[string]User
+	Users      map[string]User
+	Token2User map[string]User
 }
 
 func (users *Users) init() {
@@ -47,23 +48,27 @@ func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 	tok2 := r.Header.Get("Access-Token")
 	client := BorrowClient()
 	defer ReturnClient(client)
+
+	var tok string
 	if len(tok1) > 0 {
-		name, _ := client.Get("token2name:" + tok1).Result()
-		user := users.getuser(name)
-		if user.id > 0 {
-			return user, nil
-		}
-		err = errors.New("Invalid token!")
-		return User{}, err
+		tok = tok1
 	}
 	if len(tok2) > 0 {
-		name, _ := client.Get("token2name:" + tok2).Result()
-		user := users.getuser(name)
-		if user.id > 0 {
-			return user, nil
+		tok = tok2
+	}
+	if len(tok) > 0 {
+		v, ok := users.Token2User[tok]
+		if ok {
+			return v, nil
+		} else {
+			name, _ := client.Get("token2name:" + tok1).Result()
+			user := users.getuser(name)
+			if user.id > 0 {
+				return user, nil
+			}
+			err = errors.New("Invalid token!")
+			return User{}, err
 		}
-		err = errors.New("Invalid token!")
-		return User{}, err
 	}
 	err = errors.New("No token")
 	return User{}, err
