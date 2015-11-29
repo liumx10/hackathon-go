@@ -3,10 +3,10 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/coocood/freecache"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"github.com/coocood/freecache"
 	"sync"
 )
 
@@ -17,6 +17,7 @@ type User struct {
 }
 type Users struct {
 	Users      map[string]User
+	Caches     map[string]bool
 	Token2User *freecache.Cache
 	m          *sync.RWMutex
 }
@@ -24,14 +25,15 @@ type Users struct {
 func (users *Users) init() {
 	users.Users = make(map[string]User)
 	users.Token2User = freecache.NewCache(10000 * 200)
-	
+	users.Caches = make(map[string]bool)
 	users.m = new(sync.RWMutex)
 }
 func (users *Users) add(id int, name string, pwd string) {
+
 	users.Users[name] = User{id, name, pwd}
 }
 func (users *Users) addtoken(tok string, username string) {
-	users.Token2User.Set([]byte(tok),[]byte(username),60)
+	users.Token2User.Set([]byte(tok), []byte(username), 60)
 }
 func (users *Users) check(name string, pwd string) bool {
 	v, ok := users.Users[name]
@@ -55,7 +57,6 @@ func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 	var err error
 	tok1 := r.Form.Get("access_token")
 	tok2 := r.Header.Get("Access-Token")
-	
 
 	var tok string
 	if len(tok1) > 0 {
@@ -66,7 +67,7 @@ func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 	}
 	if len(tok) > 0 {
 		v, err := users.Token2User.Get([]byte(tok))
-		if err!=nil {
+		if err != nil {
 			return users.getuser(string(v[:])), nil
 		} else {
 			client := BorrowClient()
@@ -74,7 +75,7 @@ func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 			name, _ := client.Get("token2name:" + tok).Result()
 			user := users.getuser(name)
 			if user.id > 0 {
-				users.addtoken(tok,name)
+				users.addtoken(tok, name)
 				return user, nil
 			}
 			err = errors.New("Invalid token!")
@@ -151,7 +152,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			pipeline.Exec()
 
 			users.addtoken(str, user.name)
-			
 
 			Response(w, 200, loginReply{user.id, t.Username, str})
 		} else {
