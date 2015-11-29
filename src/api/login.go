@@ -25,16 +25,12 @@ type Users struct {
 
 func (users *Users) init() {
 	users.Users = make(map[string]User)
-	users.Token2User = freecache.NewCache(10000 * 200)
 	users.Caches = make(map[string]string)
 	users.m = new(sync.RWMutex)
 }
 func (users *Users) add(id int, name string, pwd string, tok string) {
 	users.Caches[tok] = name
 	users.Users[name] = User{id, name, pwd, tok}
-}
-func (users *Users) addtoken(tok string, username string) {
-	users.Token2User.Set([]byte(tok), []byte(username), 60)
 }
 func (users *Users) check(name string, pwd string) bool {
 	v, ok := users.Users[name]
@@ -88,13 +84,14 @@ func InitUser() {
 		os.Exit(-1)
 	}
 	defer rows.Close()
-	i := 0
 	client := BorrowClient()
 	defer ReturnClient(client)
 	for rows.Next() {
 		var id int
 		var name, pwd string
 		rows.Scan(&id, &name, &pwd)
+		//Make the token in the initialization of users.
+		//TODO : Change the token periodically to ensure safety.
 		tok, _ := client.Get("name2token:" + name).Result()
 		if tok == "" {
 			tok = RandStringRunes(12)
@@ -104,13 +101,6 @@ func InitUser() {
 
 	}
 	fmt.Println("end")
-	for _, user := range users.Users {
-		fmt.Println(user.id, user.name, user.pwd)
-		i++
-		if i > 10 {
-			break
-		}
-	}
 }
 
 type loginData struct {

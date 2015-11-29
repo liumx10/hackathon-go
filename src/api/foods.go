@@ -94,6 +94,7 @@ func InitFood() {
 				foods.update(i, st)
 			}
 			foods.m.Unlock()
+			//Update the foods every second.
 			time.Sleep(1000 * time.Millisecond)
 		}
 	}()

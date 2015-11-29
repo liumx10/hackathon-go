@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"runtime/debug"
 	"time"
+	"runtime"
 )
 
 type Reply struct {
@@ -55,13 +56,23 @@ func Error(w http.ResponseWriter, err error, message string) {
 
 func Init() {
 	fmt.Println("init environment")
+	//To ensure every server will have same random strings in initialization.
 	rand.Seed(2)
+	//Disable default GC.
 	debug.SetGCPercent(-1)
+	
+	go func(){
+		//Run GC every 10 Minutes. Reduce the frequency of GC to improve performance.
+		time.Sleep(10 * time.Minute)
+		runtime.GC()
+	}()
+
 
 	InitNewMysqlClient()
 	InitNewRedisClient()
 
 	InitFood()
 	InitUser()
+	//To ensure the random strings are different among servers.
 	rand.Seed(time.Now().UnixNano())
 }
