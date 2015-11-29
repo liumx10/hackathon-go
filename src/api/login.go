@@ -14,10 +14,11 @@ type User struct {
 	id   int
 	name string
 	pwd  string
+	tok  string
 }
 type Users struct {
 	Users      map[string]User
-	Caches     map[string]bool
+	Caches     map[string]string
 	Token2User *freecache.Cache
 	m          *sync.RWMutex
 }
@@ -25,12 +26,12 @@ type Users struct {
 func (users *Users) init() {
 	users.Users = make(map[string]User)
 	users.Token2User = freecache.NewCache(10000 * 200)
-	users.Caches = make(map[string]bool)
+	users.Caches = make(map[string]string)
 	users.m = new(sync.RWMutex)
 }
-func (users *Users) add(id int, name string, pwd string) {
-
-	users.Users[name] = User{id, name, pwd}
+func (users *Users) add(id int, name string, pwd string, tok string) {
+	users.Caches[tok] = name
+	users.Users[name] = User{id, name, pwd, tok}
 }
 func (users *Users) addtoken(tok string, username string) {
 	users.Token2User.Set([]byte(tok), []byte(username), 60)
@@ -47,7 +48,7 @@ func (users *Users) check(name string, pwd string) bool {
 func (users *Users) getuser(name string) User {
 	v, ok := users.Users[name]
 	if !ok {
-		return User{-1, "", ""}
+		return User{-1, "", "", ""}
 	}
 	return v
 }
@@ -66,21 +67,12 @@ func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 		tok = tok2
 	}
 	if len(tok) > 0 {
-		v, err := users.Token2User.Get([]byte(tok))
-		if err != nil {
-			return users.getuser(string(v[:])), nil
-		} else {
-			client := BorrowClient()
-			defer ReturnClient(client)
-			name, _ := client.Get("token2name:" + tok).Result()
-			user := users.getuser(name)
-			if user.id > 0 {
-				users.addtoken(tok, name)
-				return user, nil
-			}
-			err = errors.New("Invalid token!")
-			return User{}, err
+		v, ok := users.Caches[tok]
+		fmt.Println(tok)
+		if !ok {
+			return User{}, errors.New("Invalid token!")
 		}
+		return users.getuser(v), nil
 	}
 	err = errors.New("No token")
 	return User{}, err
@@ -97,13 +89,22 @@ func InitUser() {
 		os.Exit(-1)
 	}
 	defer rows.Close()
+	i := 0
+	client := BorrowClient()
+	defer ReturnClient(client)
 	for rows.Next() {
 		var id int
 		var name, pwd string
 		rows.Scan(&id, &name, &pwd)
-		users.add(id, name, pwd)
+		tok, _ := client.Get("name2token:" + name).Result()
+		if tok == "" {
+			tok = RandStringRunes(12)
+			client.Set("name2token:"+name, tok, 0)
+		}
+		users.add(id, name, pwd, tok)
+
 	}
-	i := 0
+	fmt.Println("end")
 	for _, user := range users.Users {
 		fmt.Println(user.id, user.name, user.pwd)
 		i++
@@ -135,25 +136,10 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var t loginData
 	err = Parser(body, &t)
-
 	if err == nil {
 		user := users.getuser(t.Username)
 		if user.id != -1 && user.pwd == t.Password {
-			str := RandStringRunes(10)
-			//log.Println(str)
-			//log.Println(t.Username)
-
-			client := BorrowClient()
-			defer ReturnClient(client)
-			pipeline := client.Pipeline()
-			defer pipeline.Close()
-			//		pipeline.Set("name2token:"+t.Username, str, 0).Err()
-			pipeline.Set("token2name:"+str, t.Username, 0).Err()
-			pipeline.Exec()
-
-			users.addtoken(str, user.name)
-
-			Response(w, 200, loginReply{user.id, t.Username, str})
+			Response(w, 200, loginReply{user.id, t.Username, user.tok})
 		} else {
 			Response(w, 403, Reply{"USER_AUTH_FAIL", "用户名或密码错误"})
 		}
