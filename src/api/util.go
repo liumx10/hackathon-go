@@ -2,12 +2,12 @@ package api
 
 import (
 	"encoding/json"
-	"runtime/debug"
 	"fmt"
-    "time"
 	"log"
 	"math/rand"
 	"net/http"
+	"runtime/debug"
+	"time"
 )
 
 type Reply struct {
@@ -55,9 +55,7 @@ func Error(w http.ResponseWriter, err error, message string) {
 
 func Init() {
 	fmt.Println("init environment")
-    rand.Seed(time.Now().UnixNano())
-
-
+	rand.Seed(2)
 	debug.SetGCPercent(-1)
 
 	InitNewMysqlClient()
@@ -65,4 +63,5 @@ func Init() {
 
 	InitFood()
 	InitUser()
+	rand.Seed(time.Now().UnixNano())
 }
