@@ -37,18 +37,15 @@ func (foods *Foods) init() {
 	foods.count = 0
 }
 func (foods *Foods) check(id int) bool {
-	for i := range foods.FoodsId {
-		if foods.FoodsId[i] == id {
-			return true
-		}
-	}
-	return false
+	_, ok := foods.Foods[id]
+	return ok
 }
 func (foods *Foods) get_price(id int) int {
-	if id > 101 || id < 1 {
-		return -1
+	v, ok := foods.Foods[id]
+	if ok {
+		return v.Price
 	} else {
-		return foods.Foods[id].Price
+		return -1
 	}
 }
 
