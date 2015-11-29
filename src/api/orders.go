@@ -96,7 +96,6 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 
 		food_ids:=make([]string,len(cart_foods))
 		food_counts:=make([]int,len(cart_foods))
-		food_stock:=make([]int,len(cart_foods))
 
 		for i := 0; i < len(cart_foods); i++ {
 			strs := strings.FieldsFunc(cart_foods[i], func(s rune) bool {
@@ -149,10 +148,6 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		finish_pipeline.SAdd("ALL_ORDERS", order_content+";"+user_id+";"+t.CartId)
 		finish_pipeline.Exec()
 		finish_pipeline.Close()
-		for i := 0; i < len(cart_foods); i++ {
-			id, _ := strconv.Atoi(food_ids[i])
-			foods.update(id, food_stock[i]-food_counts[i])
-		}
 
 		Response(w, 200, OrderPostReply{t.CartId})
 
