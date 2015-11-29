@@ -68,7 +68,6 @@ func (users *Users) get_user_by_request(r *http.Request) (User, error) {
 	}
 	if len(tok) > 0 {
 		v, ok := users.Caches[tok]
-		fmt.Println(tok)
 		if !ok {
 			return User{}, errors.New("Invalid token!")
 		}
