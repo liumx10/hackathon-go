@@ -93,9 +93,10 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		cart_foods := cart_foodcmd.Val()
 		//cart_foods := client.LRange(t.CartId+":cart_foods", 0, 2).Val()
 
-		var food_ids [3]string
-		var food_counts [3]int
-		var food_stock [3]int
+
+		food_ids:=make([]string,len(cart_foods))
+		food_counts:=make([]int,len(cart_foods))
+		food_stock:=make([]int,len(cart_foods))
 
 		for i := 0; i < len(cart_foods); i++ {
 			strs := strings.FieldsFunc(cart_foods[i], func(s rune) bool {
@@ -107,7 +108,7 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 
 		pipeline := client.Pipeline()
 
-		var decr_cmd [3]*redis.IntCmd
+		decr_cmd:=make([]*redis.IntCmd,len(cart_foods))
 		for i := 0; i < len(cart_foods); i++ {
 			decr_cmd[i] = pipeline.DecrBy("food:"+food_ids[i]+":stock", int64(food_counts[i]))
 		}
