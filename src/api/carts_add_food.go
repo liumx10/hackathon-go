@@ -73,7 +73,7 @@ func CartsAddFoodHandler(w http.ResponseWriter, r *http.Request) {
 
 	cart_exist_cmd = pipeline.SIsMember("ALL_CARTS", cart_id)
 	user_cart_id_cmd = pipeline.Get(user_id + ":carts")
-	cart_food_cmd = pipeline.LRange(cart_id+":cart_foods", 0, 2)
+	cart_food_cmd = pipeline.LRange(cart_id+":cart_foods", 0, -1)
 	pipeline.Exec()
 
 	if !cart_exist_cmd.Val() {
