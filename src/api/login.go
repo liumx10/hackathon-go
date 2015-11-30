@@ -92,11 +92,8 @@ func InitUser() {
 		rows.Scan(&id, &name, &pwd)
 		//Make the token in the initialization of users.
 		//TODO : Change the token periodically to ensure safety.
-		tok, _ := client.Get("name2token:" + name).Result()
-		if tok == "" {
-			tok = RandStringRunes(12)
-			client.Set("name2token:"+name, tok, 0)
-		}
+		//Because the seed is same for every server.The result should be same in every server.
+		tok := RandStringRunes(12)
 		users.add(id, name, pwd, tok)
 
 	}

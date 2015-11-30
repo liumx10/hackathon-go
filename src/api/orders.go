@@ -105,12 +105,24 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 			food_counts[i], _ = strconv.Atoi(strs[1])
 		}
 
+		order_content := ""
+		for i := 0; i < len(cart_foods); i++ {
+			order_content += food_ids[i] + ":" + strconv.Itoa(food_counts[i])
+			if i != len(order_content)-1 {
+				order_content += ","
+			}
+		}
+		
 		pipeline := client.Pipeline()
 
 		decr_cmd:=make([]*redis.IntCmd,len(cart_foods))
 		for i := 0; i < len(cart_foods); i++ {
 			decr_cmd[i] = pipeline.DecrBy("food:"+food_ids[i]+":stock", int64(food_counts[i]))
 		}
+		
+		pipeline.Set(user_id+":order", order_content, 0)
+		pipeline.Set(user_id+":order_id", t.CartId, 0)
+		pipeline.SAdd("ALL_ORDERS", order_content+";"+user_id+";"+t.CartId)
 		pipeline.Exec()
 		pipeline.Close()
 		rollback := false
@@ -128,26 +140,16 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 			for i := 0; i < len(cart_foods); i++ {
 				rollback_pipeline.IncrBy("food:"+food_ids[i]+":stock", int64(food_counts[i]))
 			}
+			rollback_pipeline.Del(user_id+":order")
+			rollback_pipeline.Del(user_id+":order_id")
+			rollback_pipeline.SRem("ALL_ORDERS",order_content+";"+user_id+";"+t.CartId)
 			rollback_pipeline.Exec()
 			rollback_pipeline.Close()
 			Response(w, 403, Reply{"FOOD_OUT_OF_STOCK", "食物库存不足"})
 			return
 		}
 
-		order_content := ""
-		for i := 0; i < len(cart_foods); i++ {
-			order_content += food_ids[i] + ":" + strconv.Itoa(food_counts[i])
-			if i != len(order_content)-1 {
-				order_content += ","
-			}
-		}
-
-		finish_pipeline := client.Pipeline()
-		finish_pipeline.Set(user_id+":order", order_content, 0)
-		finish_pipeline.Set(user_id+":order_id", t.CartId, 0)
-		finish_pipeline.SAdd("ALL_ORDERS", order_content+";"+user_id+";"+t.CartId)
-		finish_pipeline.Exec()
-		finish_pipeline.Close()
+		
 
 		Response(w, 200, OrderPostReply{t.CartId})
 
