@@ -68,7 +68,7 @@ func OrderHandler(w http.ResponseWriter, r *http.Request) {
 		ismember = init_pip.SIsMember("ALL_CARTS", t.CartId)
 		cart_exist = init_pip.Exists(user_id + ":order")
 		user_cart_id = init_pip.Get(user_id + ":carts")
-		cart_foodcmd = init_pip.LRange(t.CartId+":cart_foods", 0, 2)
+		cart_foodcmd = init_pip.LRange(t.CartId+":cart_foods", 0, -1)
 		init_pip.Exec()
 		defer init_pip.Close()
 

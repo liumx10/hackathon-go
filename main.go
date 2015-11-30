@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	runtime.GOMAXPROCS(8)
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	api.Init()
 
 	http.HandleFunc("/foods",api.FoodsHandler)
